@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>St Joseph High School - Secure Mobile Learning Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen flex flex-col">
+
+  <!-- UNIFIED HEADER -->
+  <header class="bg-blue-900 text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <i class="fa-solid fa-graduation-cap text-3xl text-yellow-400"></i>
+        <div>
+          <h1 class="text-xl font-bold tracking-wide">St Joseph High School</h1>
+          <p class="text-xs text-blue-200">Secure Controlled Mobile Learning System</p>
+        </div>
+      </div>
+      <div id="userInfo" class="hidden flex items-center space-x-4">
+        <span id="userBadge" class="bg-blue-800 text-xs px-3 py-1 rounded-full border border-blue-600 font-medium"></span>
+        <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded transition font-medium">
+          <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+    
+    <!-- LOGIN FORM -->
+    <div id="loginSection" class="max-w-md mx-auto my-12 bg-white p-8 rounded-xl shadow-lg border border-slate-200">
+      <h2 class="text-2xl font-bold text-center text-blue-900 mb-2">Portal Sign-In</h2>
+      <p class="text-sm text-center text-slate-500 mb-6">Select or enter user credentials</p>
+
+      <div class="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs space-y-1 text-slate-700">
+        <p class="font-bold text-blue-900">Demo Accounts (Password: password)</p>
+        <p>• <strong>Administrator:</strong> admin1</p>
+        <p>• <strong>Teacher:</strong> teacher1</p>
+        <p>• <strong>Student:</strong> student1</p>
+      </div>
+      
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Username</label>
+          <input type="text" id="username" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required placeholder="e.g. teacher1">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Password</label>
+          <input type="password" id="password" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required value="password">
+        </div>
+        <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-2.5 rounded-lg transition">
+          Sign In
+        </button>
+      </form>
+      <div id="loginError" class="mt-4 text-xs text-red-600 text-center hidden"></div>
+    </div>
+
+    <!-- DYNAMIC PORTAL CONTAINER -->
+    <div id="portalSection" class="hidden space-y-6">
+      
+      <!-- PORTAL TITLE BAR -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+        <div>
+          <h2 id="portalTitle" class="text-xl font-bold text-slate-800"></h2>
+          <p id="portalSubtitle" class="text-xs text-slate-500"></p>
+        </div>
+        <span class="inline-flex items-center text-xs px-2.5 py-1 rounded bg-green-100 text-green-800 font-medium w-fit">
+          <i class="fa-solid fa-shield-halved mr-1"></i> Policy Enforcement Active
+        </span>
+      </div>
+
+      <!-- TEACHER PORTAL SPECIFIC: 400MB FILE UPLOAD -->
+      <div id="teacherControls" class="hidden bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-md font-bold text-slate-800 mb-4 flex items-center">
+          <i class="fa-solid fa-cloud-arrow-up mr-2 text-blue-900"></i> Upload Educational Content (Up to 400MB)
+        </h3>
+        <form id="uploadForm" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Resource Title</label>
+              <input type="text" id="resourceTitle" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g. Form 4 Physics Lecture Video" required>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">File Attachment (Video max 400MB)</label>
+              <input type="file" id="resourceFile" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required>
+            </div>
+          </div>
+          
+          <!-- Progress Bar -->
+          <div id="progressContainer" class="hidden space-y-1">
+            <div class="w-full bg-slate-200 rounded-full h-2">
+              <div id="progressBar" class="bg-blue-600 h-2 rounded-full w-0 transition-all duration-200"></div>
+            </div>
+            <span id="progressText" class="text-xs text-slate-500 float-right">0%</span>
+          </div>
+
+          <button type="submit" class="bg-blue-900 hover:bg-blue-800 text-white font-medium text-sm px-5 py-2 rounded-lg transition">
+            Publish Material
+          </button>
+        </form>
+      </div>
+
+      <!-- ADMIN PORTAL SPECIFIC: GOVERNANCE & LOGS -->
+      <div id="adminControls" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 class="text-md font-bold text-slate-800 mb-4"><i class="fa-solid fa-sliders mr-2 text-blue-900"></i> Access Governance Controls</h3>
+          <p class="text-xs text-slate-500 mb-4">Toggle student portal access in alignment with official school learning hours.</p>
+          <div class="flex items-center space-x-4">
+            <button onclick="setSystemAccess(true)" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+              Enable Access
+            </button>
+            <button onclick="setSystemAccess(false)" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+              Restrict Access
+            </button>
+          </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 class="text-md font-bold text-slate-800 mb-4"><i class="fa-solid fa-list-check mr-2 text-blue-900"></i> Security & Governance Audit</h3>
+          <div id="auditLogList" class="text-xs font-mono bg-slate-50 p-3 rounded-lg border max-h-40 overflow-y-auto space-y-1"></div>
+        </div>
+      </div>
+
+      <div id="adminRegisterSection" class="hidden bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-md font-bold text-slate-800 mb-4"><i class="fa-solid fa-user-plus mr-2 text-blue-900"></i> Register New System User</h3>
+        <form id="registerUserForm" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Full Name</label>
+              <input type="text" id="registerFullName" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g. Jane Mokoena" required>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Username</label>
+              <input type="text" id="registerUsername" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g. student42" required>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Password</label>
+              <input type="password" id="registerPassword" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Create a secure password" required>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Role</label>
+              <select id="registerRole" class="w-full px-3 py-2 border rounded-lg text-sm bg-white" required>
+                <option value="student">Student</option>
+                <option value="teacher">Teacher</option>
+                <option value="administrator">Administrator</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-3">
+            <button type="submit" class="bg-blue-900 hover:bg-blue-800 text-white font-medium text-sm px-5 py-2 rounded-lg transition">
+              Register User
+            </button>
+            <div id="registerUserStatus" class="hidden text-xs font-medium"></div>
+          </div>
+        </form>
+      </div>
+
+      <!-- UNIFIED CONTENT VIEW (MATERIALS) -->
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-md font-bold text-slate-800 mb-4"><i class="fa-solid fa-folder-open mr-2 text-blue-900"></i> Approved Learning Resources</h3>
+        <div id="materialsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-800 text-slate-400 text-xs py-4 text-center border-t border-slate-700">
+    <p>&copy; 2026 St Joseph High School | Design Science Research Prototype</p>
+  </footer>
+
+  <!-- INTEGRATED CLIENT CONTROLLER -->
+  <script>
+    let currentToken = null;
+    let currentUser = null;
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const u = document.getElementById('username').value;
+      const p = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error);
+
+        currentToken = data.token;
+        currentUser = data;
+
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('portalSection').classList.remove('hidden');
+        document.getElementById('userInfo').classList.remove('hidden');
+        document.getElementById('userBadge').innerText = `${data.name} (${data.role.toUpperCase()})`;
+
+        setupPortalView(data.role);
+        loadMaterials();
+      } catch (err) {
+        const errDiv = document.getElementById('loginError');
+        errDiv.innerText = err.message;
+        errDiv.classList.remove('hidden');
+      }
+    });
+
+    function setupPortalView(role) {
+      const title = document.getElementById('portalTitle');
+      const subtitle = document.getElementById('portalSubtitle');
+
+      document.getElementById('teacherControls').classList.add('hidden');
+      document.getElementById('adminControls').classList.add('hidden');
+      document.getElementById('adminRegisterSection').classList.add('hidden');
+
+      if (role === 'student') {
+        title.innerText = 'Student Learning Dashboard';
+        subtitle.innerText = 'Access approved course videos, notes, and study guides.';
+      } else if (role === 'teacher') {
+        title.innerText = 'Teacher Management Portal';
+        subtitle.innerText = 'Upload resources, manage class content, and publish large lecture videos.';
+        document.getElementById('teacherControls').classList.remove('hidden');
+      } else if (role === 'administrator') {
+        title.innerText = 'Administrative Governance Dashboard';
+        subtitle.innerText = 'Manage system policy, access sessions, and audit system activity logs.';
+        document.getElementById('adminControls').classList.remove('hidden');
+        document.getElementById('adminRegisterSection').classList.remove('hidden');
+        loadAuditLogs();
+      }
+    }
+
+    async function loadMaterials() {
+      try {
+        const res = await fetch('/api/materials', {
+          headers: { 'Authorization': `Bearer ${currentToken}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        const container = document.getElementById('materialsList');
+        container.innerHTML = data.map(m => `
+          <div class="border rounded-lg p-4 bg-slate-50 flex flex-col justify-between space-y-2">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold uppercase px-2 py-0.5 rounded ${m.type === 'video' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">
+                  ${m.type}
+                </span>
+                <span class="text-xs text-slate-400">${m.size || ''}</span>
+              </div>
+              <h4 class="font-semibold text-slate-800 text-sm">${m.title}</h4>
+              <p class="text-xs text-slate-500">Uploaded by: ${m.uploadedBy}</p>
+            </div>
+            <a href="${m.url}" target="_blank" class="block text-center text-xs bg-blue-900 text-white py-1.5 rounded hover:bg-blue-800 transition">
+              <i class="fa-solid fa-download mr-1"></i> Open File
+            </a>
+          </div>
+        `).join('');
+      } catch (err) {
+        document.getElementById('materialsList').innerHTML = `<p class="text-xs text-red-600 font-semibold p-2 bg-red-50 rounded border border-red-200">${err.message}</p>`;
+      }
+    }
+
+    // Teacher Upload Handler with Progress Bar (up to 400MB)
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('resourceFile');
+      const titleInput = document.getElementById('resourceTitle');
+      const file = fileInput.files[0];
+
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', titleInput.value);
+
+      const xhr = new XMLHttpRequest();
+      const progressContainer = document.getElementById('progressContainer');
+      const progressBar = document.getElementById('progressBar');
+      const progressText = document.getElementById('progressText');
+
+      progressContainer.classList.remove('hidden');
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          progressBar.style.width = percent + '%';
+          progressText.innerText = percent + '%';
+        }
+      });
+
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          if (xhr.status === 200) {
+            alert('File published successfully!');
+            fileInput.value = '';
+            titleInput.value = '';
+            progressContainer.classList.add('hidden');
+            loadMaterials();
+          } else {
+            alert('Upload failed: ' + JSON.parse(xhr.responseText).error);
+            progressContainer.classList.add('hidden');
+          }
+        }
+      };
+
+      xhr.open('POST', '/api/upload', true);
+      xhr.setRequestHeader('Authorization', `Bearer ${currentToken}`);
+      xhr.send(formData);
+    });
+
+    // Admin Control Actions
+    async function setSystemAccess(status) {
+      await fetch('/api/admin/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: JSON.stringify({ active: status })
+      });
+      alert(`Platform access policy updated: ${status ? 'Active' : 'Restricted'}`);
+      loadAuditLogs();
+    }
+
+    document.getElementById('registerUserForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const statusBox = document.getElementById('registerUserStatus');
+      const payload = {
+        fullName: document.getElementById('registerFullName').value,
+        username: document.getElementById('registerUsername').value,
+        password: document.getElementById('registerPassword').value,
+        role: document.getElementById('registerRole').value
+      };
+
+      try {
+        const res = await fetch('/api/admin/register-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentToken}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'User registration failed');
+
+        statusBox.className = 'text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-3 py-2 rounded';
+        statusBox.innerText = `${data.user.name} was registered as ${data.user.role}.`;
+        statusBox.classList.remove('hidden');
+
+        document.getElementById('registerUserForm').reset();
+        loadAuditLogs();
+      } catch (err) {
+        statusBox.className = 'text-xs font-medium text-red-700 bg-red-50 border border-red-200 px-3 py-2 rounded';
+        statusBox.innerText = err.message;
+        statusBox.classList.remove('hidden');
+      }
+    });
+
+    async function loadAuditLogs() {
+      const res = await fetch('/api/admin/logs', {
+        headers: { 'Authorization': `Bearer ${currentToken}` }
+      });
+      const data = await res.json();
+      document.getElementById('auditLogList').innerHTML = data.map(log => `
+        <div>[${new Date(log.timestamp).toLocaleTimeString()}] <strong>${log.user}:</strong> ${log.action}</div>
+      `).join('');
+    }
+
+    function logout() {
+      location.reload();
+    }
+  </script>
+</body>
+</html>
