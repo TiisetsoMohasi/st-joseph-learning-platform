@@ -1,10 +1,14 @@
 {
+  "name": "st-joseph-mobile-learning",
+  "version": "2.0.0",
+  "description": "Secure Mobile Learning Platform under Controlled Smartphone Usage Policies for St Joseph High School",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^5.3.0",
-    "jsonwebtoken": "^9.0.3",
-    "multer": "^2.4.0"
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1"
   }
 }

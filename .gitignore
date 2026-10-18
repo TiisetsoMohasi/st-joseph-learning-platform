@@ -1,10 +1,59 @@
-# WordPress - ignore core, configuration, examples, uploads and logs.
-# https://github.com/github/gitignore/blob/main/WordPress.gitignore
+# Node / package manager
+node_modules/
+.npm/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Core
-#
-# Note: if you want to stage/commit WP core files
-# you can delete this whole section/until Configuration.
+# Build / generated output
+build/
+dist/
+out/
+coverage/
+.cache/
+.next/
+.nuxt/
+.vite/
+*.tsbuildinfo
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Database / local runtime data
+*.sqlite
+*.sqlite3
+*.db
+/data/*.db
+/data/*.sqlite
+/data/*.sqlite3
+
+# Uploads / user-generated content
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Logs and temp files
+logs/
+*.log
+*.pid
+tmp/
+temp/
+
+# IDE / editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local WordPress runtime files
 /wp-admin/
 /wp-content/index.php
 /wp-content/languages
@@ -16,33 +65,10 @@
 /readme.html
 /wp-*.php
 /xmlrpc.php
-
-# Configuration
 wp-config.php
-
-# Example themes
-/wp-content/themes/twenty*/
-
-# Example plugin
-/wp-content/plugins/hello.php
-
-# Uploads
 /wp-content/uploads/
-
-# Log files
-*.log
-
-# htaccess
 /.htaccess
 
-# All plugins
-#
-# Note: If you wish to whitelist plugins,
-# uncomment the next line
-#/wp-content/plugins
-
-# All themes
-#
-# Note: If you wish to whitelist themes,
-# uncomment the next line
-#/wp-content/themes
+# Example content
+/wp-content/themes/twenty*/
+/wp-content/plugins/hello.php
