@@ -115,6 +115,14 @@
             <i class="fa-solid fa-cloud-arrow-up text-sjhssky w-5"></i>
             <span>Upload Content (400MB)</span>
           </a>
+          <a href="#" onclick="showTab('forum')" class="flex items-center space-x-3 p-2.5 rounded-lg text-blue-200 hover:bg-blue-900 hover:text-white transition">
+            <i class="fa-solid fa-comments text-sjhssky w-5"></i>
+            <span>Discussion Forum</span>
+          </a>
+          <a href="#" onclick="showTab('participants')" class="flex items-center space-x-3 p-2.5 rounded-lg text-blue-200 hover:bg-blue-900 hover:text-white transition">
+            <i class="fa-solid fa-users text-sjhssky w-5"></i>
+            <span>Class Participants</span>
+          </a>
         </div>
 
         <div id="adminMenu" class="hidden space-y-2">
@@ -188,6 +196,26 @@
         </div>
       </div>
 
+      <div id="tabForum" class="hidden space-y-4">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 class="text-md font-bold text-sjhsblue mb-4"><i class="fa-solid fa-comments mr-2"></i> Discussion Forum</h3>
+          <div id="discussionComposer" class="space-y-3 mb-5">
+            <textarea id="discussionQuestion" rows="4" class="w-full border rounded-lg p-3 text-sm" placeholder="Ask your students a discussion question..." required></textarea>
+            <button onclick="postDiscussionQuestion()" class="bg-sjhsblue hover:bg-sjhsdark text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition">
+              Post Question
+            </button>
+          </div>
+          <div id="discussionList" class="space-y-3"></div>
+        </div>
+      </div>
+
+      <div id="tabParticipants" class="hidden space-y-4">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 class="text-md font-bold text-sjhsblue mb-4"><i class="fa-solid fa-users mr-2"></i> Class Participants</h3>
+          <div id="participantsList" class="space-y-2"></div>
+        </div>
+      </div>
+
       <div id="tabGovernance" class="hidden space-y-4">
         <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
           <h3 class="text-md font-bold text-sjhsblue mb-2"><i class="fa-solid fa-toggle-on mr-2"></i> Access Session Restrictions</h3>
@@ -256,18 +284,19 @@
       </button>
 
       <h3 id="modalRoleTitle" class="text-xl font-bold text-sjhsblue mb-1">Portal Sign-In</h3>
-      <p class="text-xs text-slate-500 mb-4">Enter registered user credentials to log in.</p>
+      <p class="text-xs text-slate-500 mb-4">Enter your school email or username to log in.</p>
 
       <div class="mb-4 p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs space-y-0.5 text-slate-700">
-        <p class="font-bold text-sjhsblue">Registered Demo Accounts (Password: password)</p>
-        <p>• <strong>Teacher:</strong> teacher1</p>
-        <p>• <strong>Student:</strong> student1</p>
+        <p class="font-bold text-sjhsblue">Accounts</p>
+        <p>• <strong>Admin:</strong> admin1 / password</p>
+        <p>• <strong>Teacher:</strong> teacher1@stjoseph.co.ls / teacher1@112</p>
+        <p>• <strong>Student:</strong> student1@stjoseph.com / student1@112</p>
       </div>
 
       <form id="modalLoginForm" class="space-y-4">
         <input type="hidden" id="selectedRole">
         <div>
-          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Username</label>
+          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Username or Email</label>
           <input type="text" id="username" class="w-full px-3 py-2 border rounded-lg text-sm" required>
         </div>
         <div>
@@ -364,10 +393,14 @@
       if ((role === 'administrator' || currentUser?.role === 'administrator') && currentToken) {
         loadAuditLogs();
       }
+      if ((role === 'teacher' || currentUser?.role === 'teacher') && currentToken) {
+        loadDiscussionForum();
+        loadParticipants();
+      }
     }
 
     function showTab(tabName) {
-      const tabs = ['resources', 'upload', 'governance', 'audit', 'register'];
+      const tabs = ['resources', 'upload', 'forum', 'participants', 'governance', 'audit', 'register'];
       tabs.forEach((tab) => {
         const el = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
         if (el) el.classList.add('hidden');
@@ -379,6 +412,14 @@
       if (tabName === 'upload') {
         target = document.getElementById('tabUpload');
         title = 'Teacher Upload (400MB Max)';
+      } else if (tabName === 'forum') {
+        target = document.getElementById('tabForum');
+        title = 'Discussion Forum';
+        loadDiscussionForum();
+      } else if (tabName === 'participants') {
+        target = document.getElementById('tabParticipants');
+        title = 'Class Participants';
+        loadParticipants();
       } else if (tabName === 'governance') {
         target = document.getElementById('tabGovernance');
         title = 'Policy Governance Controls';
@@ -495,6 +536,89 @@
         loadAuditLogs();
       } catch (err) {
         alert(err.message);
+      }
+    }
+
+    async function loadDiscussionForum() {
+      try {
+        const res = await fetch('/api/discussions', {
+          headers: { 'Authorization': `Bearer ${currentToken}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Unable to load forum');
+
+        const list = document.getElementById('discussionList');
+        if (!data.length) {
+          list.innerHTML = '<div class="text-sm text-slate-500">No discussion questions yet.</div>';
+          return;
+        }
+
+        list.innerHTML = data.map((item) => `
+          <div class="border rounded-lg p-3 bg-slate-50">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <span class="font-semibold text-sjhsblue text-sm">${item.userName}</span>
+                <span class="text-xs text-slate-500 uppercase ml-2">${item.userRole}</span>
+              </div>
+              <span class="text-[10px] text-slate-400">${new Date(item.createdAt).toLocaleString()}</span>
+            </div>
+            <p class="text-sm text-slate-700">${item.question}</p>
+            <p class="text-[11px] text-slate-500 mt-2">Email: ${item.userEmail}</p>
+          </div>
+        `).join('');
+      } catch (err) {
+        document.getElementById('discussionList').innerHTML = `<div class="text-red-600 text-sm">${err.message}</div>`;
+      }
+    }
+
+    async function postDiscussionQuestion() {
+      const question = document.getElementById('discussionQuestion').value.trim();
+      if (!question) {
+        alert('Please enter a discussion question.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/discussions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentToken}`
+          },
+          body: JSON.stringify({ question })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Unable to post discussion');
+
+        document.getElementById('discussionQuestion').value = '';
+        loadDiscussionForum();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function loadParticipants() {
+      try {
+        const res = await fetch('/api/class-participants', {
+          headers: { 'Authorization': `Bearer ${currentToken}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Unable to load participants');
+
+        const list = document.getElementById('participantsList');
+        list.innerHTML = data.map((person) => `
+          <div class="flex items-center justify-between border-b border-slate-200 py-2 last:border-b-0">
+            <div>
+              <p class="font-semibold text-sm text-slate-800">${person.name}</p>
+              <p class="text-xs text-slate-500 uppercase">${person.role}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs font-medium text-sjhsblue">${person.email}</p>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        document.getElementById('participantsList').innerHTML = `<div class="text-red-600 text-sm">${err.message}</div>`;
       }
     }
 

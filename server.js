@@ -20,7 +20,8 @@ db.exec(`
     username TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     role TEXT NOT NULL,
-    name TEXT NOT NULL
+    name TEXT NOT NULL,
+    email TEXT
   );
 
   CREATE TABLE IF NOT EXISTS learning_sessions (
@@ -44,6 +45,15 @@ db.exec(`
     timestamp TEXT NOT NULL,
     user_name TEXT NOT NULL,
     action TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS discussions (
+    id INTEGER PRIMARY KEY,
+    user_name TEXT NOT NULL,
+    user_role TEXT NOT NULL,
+    user_email TEXT NOT NULL,
+    question TEXT NOT NULL,
+    created_at TEXT NOT NULL
   );
 `);
 
@@ -95,16 +105,17 @@ const ROLE_LIMITS = {
 };
 
 const defaultUsers = [
-  { id: 1, username: 'admin1', password: 'password', role: 'administrator', name: 'Admin - Sr. Mary' },
-  { id: 2, username: 'admin2', password: 'password', role: 'administrator', name: 'Admin - Mr. Nkosi' },
+  { id: 1, username: 'admin1', password: 'password', role: 'administrator', name: 'Admin - Sr. Mary', email: 'admin1@stjoseph.com' },
+  { id: 2, username: 'admin2', password: 'password', role: 'administrator', name: 'Admin - Mr. Nkosi', email: 'admin2@stjoseph.com' },
   ...Array.from({ length: 30 }, (_, index) => ({
     id: index + 3,
-    username: `teacher${index + 1}`,
-    password: 'password',
+    username: `teacher${index + 1}@stjoseph.co.ls`,
+    password: `teacher${index + 1}@112`,
     role: 'teacher',
-    name: `Teacher ${index + 1}`
+    name: `Teacher ${index + 1}`,
+    email: `teacher${index + 1}@stjoseph.co.ls`
   })),
-  { id: 33, username: 'student1', password: 'password', role: 'student', name: 'Thabo M. (Form 4)' }
+  { id: 33, username: 'student1@stjoseph.com', password: 'student1@112', role: 'student', name: 'Thabo M. (Form 4)', email: 'student1@stjoseph.com' }
 ];
 
 const defaultMaterials = [
@@ -120,9 +131,35 @@ let users = [];
 let learningSessions = { active: true, startTime: '08:00', endTime: '16:00' };
 let materials = [];
 let auditLogs = [];
+let discussionPosts = [];
 
 function rowToUser(row) {
-  return { id: row.id, username: row.username, password: row.password, role: row.role, name: row.name };
+  return { id: row.id, username: row.username, password: row.password, role: row.role, name: row.name, email: row.email || row.username };
+}
+
+function normalizeNamePart(value) {
+  return String(value || '').replace(/[^a-zA-Z0-9\s'-]/g, '').trim().toLowerCase();
+}
+
+function generateAutoCredentials(fullName, role) {
+  const cleanName = String(fullName || '').trim();
+  const parts = cleanName.split(/\s+/).filter(Boolean);
+  const firstName = normalizeNamePart(parts[0] || 'user');
+  const lastName = normalizeNamePart(parts.length > 1 ? parts[parts.length - 1] : firstName) || 'user';
+  const domain = role === 'teacher' ? 'stjoseph.co.ls' : 'stjoseph.com';
+  let email = `${firstName}.${lastName}@${domain}`;
+  let counter = 2;
+
+  while (users.some(user => (user.email || user.username).toLowerCase() === email.toLowerCase())) {
+    email = `${firstName}.${lastName}${counter}@${domain}`;
+    counter += 1;
+  }
+
+  return {
+    username: email,
+    email,
+    password: `${firstName}@112`
+  };
 }
 
 function rowToMaterial(row) {
@@ -175,13 +212,55 @@ function syncFromDatabase() {
 
   materials = db.prepare('SELECT * FROM materials ORDER BY id').all().map(rowToMaterial);
   auditLogs = db.prepare('SELECT * FROM audit_logs ORDER BY id').all().map(rowToAuditLog);
+  discussionPosts = db.prepare('SELECT * FROM discussions ORDER BY id').all().map((row) => ({
+    id: row.id,
+    userName: row.user_name,
+    userRole: row.user_role,
+    userEmail: row.user_email,
+    question: row.question,
+    createdAt: row.created_at
+  }));
+}
+
+function normalizeDefaultUserAccounts() {
+  const repairedUsers = users.map((user) => {
+    const match = defaultUsers.find((seed) => seed.id === user.id || seed.username.toLowerCase() === String(user.username || '').toLowerCase() || seed.name === user.name);
+    if (!match) return user;
+
+    const normalized = {
+      ...user,
+      username: match.username,
+      password: match.password,
+      role: match.role,
+      name: match.name,
+      email: match.email || match.username
+    };
+
+    if (normalized.role === 'teacher' && !normalized.username.includes('@stjoseph.co.ls')) {
+      normalized.username = match.username;
+      normalized.email = match.email;
+      normalized.password = match.password;
+    }
+
+    return normalized;
+  });
+
+  for (const seedUser of defaultUsers) {
+    const found = repairedUsers.find((user) => user.id === seedUser.id || user.username.toLowerCase() === seedUser.username.toLowerCase());
+    if (!found) {
+      repairedUsers.push({ ...seedUser, email: seedUser.email || seedUser.username });
+    }
+  }
+
+  users = repairedUsers;
+  syncToDatabase();
 }
 
 function syncToDatabase() {
   db.exec('DELETE FROM users');
-  const insertUser = db.prepare('INSERT INTO users (id, username, password, role, name) VALUES (?, ?, ?, ?, ?)');
+  const insertUser = db.prepare('INSERT INTO users (id, username, password, role, name, email) VALUES (?, ?, ?, ?, ?, ?)');
   for (const user of users) {
-    insertUser.run(user.id, user.username, user.password, user.role, user.name);
+    insertUser.run(user.id, user.username, user.password, user.role, user.name, user.email || user.username);
   }
 
   db.exec('DELETE FROM materials');
@@ -199,10 +278,48 @@ function syncToDatabase() {
   for (const log of auditLogs) {
     insertAuditLog.run(log.timestamp, log.user, log.action);
   }
+
+  db.exec('DELETE FROM discussions');
+  const insertDiscussion = db.prepare('INSERT INTO discussions (id, user_name, user_role, user_email, question, created_at) VALUES (?, ?, ?, ?, ?, ?)');
+  for (const item of discussionPosts) {
+    insertDiscussion.run(item.id, item.userName, item.userRole, item.userEmail, item.question, item.createdAt);
+  }
+}
+
+const userColumns = db.prepare('PRAGMA table_info(users)').all();
+if (!userColumns.some((column) => column.name === 'email')) {
+  db.exec('ALTER TABLE users ADD COLUMN email TEXT');
+}
+
+function seedDatabaseIfEmpty() {
+  const userCount = db.prepare('SELECT COUNT(*) AS count FROM users').get().count;
+  if (userCount > 0) return;
+
+  const insertUser = db.prepare('INSERT INTO users (id, username, password, role, name, email) VALUES (?, ?, ?, ?, ?, ?)');
+  for (const user of defaultUsers) {
+    insertUser.run(user.id, user.username, user.password, user.role, user.name, user.email || user.username);
+  }
+
+  const insertMaterial = db.prepare('INSERT INTO materials (id, title, type, url, uploaded_by, size) VALUES (?, ?, ?, ?, ?, ?)');
+  for (const material of defaultMaterials) {
+    insertMaterial.run(material.id, material.title, material.type, material.url, material.uploadedBy, material.size);
+  }
+
+  db.prepare('INSERT INTO learning_sessions (id, active, start_time, end_time) VALUES (1, ?, ?, ?)')
+    .run(Number(learningSessions.active), learningSessions.startTime, learningSessions.endTime);
+
+  const insertAuditLog = db.prepare('INSERT INTO audit_logs (timestamp, user_name, action) VALUES (?, ?, ?)');
+  for (const log of defaultAuditLogs) {
+    insertAuditLog.run(log.timestamp, log.user, log.action);
+  }
+
+  const insertDiscussion = db.prepare('INSERT INTO discussions (id, user_name, user_role, user_email, question, created_at) VALUES (?, ?, ?, ?, ?, ?)');
+  insertDiscussion.run(1, 'Mr. Tiisetso', 'teacher', 'teacher1@stjoseph.co.ls', 'What are the key steps in solving motion problems in physics?', new Date().toISOString());
 }
 
 seedDatabaseIfEmpty();
 syncFromDatabase();
+normalizeDefaultUserAccounts();
 
 // Authentication Middleware
 const authenticate = (req, res, next) => {
@@ -240,41 +357,62 @@ const enforceSchoolHours = (req, res, next) => {
 // --- API ENDPOINTS ---
 
 // 1. Authentication
+app.get('/api/admin/auto-session', (req, res) => {
+  const adminUser = users.find((u) => u.role === 'administrator') || defaultUsers.find((u) => u.role === 'administrator');
+  if (!adminUser) {
+    return res.status(404).json({ error: 'Administrator account not found.' });
+  }
+
+  const token = jwt.sign({ id: adminUser.id, username: adminUser.username, role: adminUser.role, name: adminUser.name, email: adminUser.email || adminUser.username }, JWT_SECRET, { expiresIn: '24h' });
+  res.json({ token, role: adminUser.role, name: adminUser.name, username: adminUser.username, email: adminUser.email || adminUser.username });
+});
+
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
   const normalizedUsername = String(username || '').trim();
-  const user = users.find(u => u.username.toLowerCase() === normalizedUsername.toLowerCase() && u.password === password);
+  const user = users.find((u) => {
+    const candidateValues = [u.username, u.email].filter(Boolean).map((value) => String(value).trim().toLowerCase());
+    return candidateValues.includes(normalizedUsername.toLowerCase()) && u.password === password;
+  });
 
   if (!user) return res.status(401).json({ error: 'Invalid username or password' });
 
-  const token = jwt.sign({ id: user.id, username: user.username, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '8h' });
+  const token = jwt.sign({ id: user.id, username: user.username, role: user.role, name: user.name, email: user.email || user.username }, JWT_SECRET, { expiresIn: '8h' });
 
   auditLogs.push({ timestamp: new Date().toISOString(), user: user.username, action: 'User logged in' });
   syncToDatabase();
-  res.json({ token, role: user.role, name: user.name, username: user.username });
+  res.json({ token, role: user.role, name: user.name, username: user.username, email: user.email || user.username });
 });
 
 app.get('/api/admin/users', authenticate, authorize(['administrator']), (req, res) => {
-  res.json(users.map(({ id, username, role, name }) => ({ id, username, role, name })));
+  res.json(users.map(({ id, username, role, name, email }) => ({ id, username, role, name, email })));
+});
+
+app.get('/api/class-participants', authenticate, (req, res) => {
+  const participantList = users
+    .filter((user) => user.role !== 'administrator' || req.user.role === 'administrator')
+    .map(({ id, username, role, name, email }) => ({ id, username, role, name, email: email || username }));
+
+  res.json(participantList);
 });
 
 app.post('/api/admin/register-user', authenticate, authorize(['administrator']), (req, res) => {
-  const { fullName, username, password, role } = req.body || {};
+  const { fullName, role } = req.body || {};
   const trimmedName = String(fullName || '').trim();
-  const trimmedUsername = String(username || '').trim();
-  const trimmedPassword = String(password || '').trim();
   const userRole = String(role || '').trim().toLowerCase();
 
-  if (!trimmedName || !trimmedUsername || !trimmedPassword || !userRole) {
-    return res.status(400).json({ error: 'Full name, username, password, and role are required.' });
+  if (!trimmedName || !userRole) {
+    return res.status(400).json({ error: 'Full name and role are required.' });
   }
 
   if (!['student', 'teacher', 'administrator'].includes(userRole)) {
     return res.status(400).json({ error: 'Role must be student, teacher, or administrator.' });
   }
 
-  if (users.some(u => u.username.toLowerCase() === trimmedUsername.toLowerCase())) {
-    return res.status(409).json({ error: 'A user with this username already exists.' });
+  const generatedCredentials = generateAutoCredentials(trimmedName, userRole);
+
+  if (users.some((u) => (u.username || '').toLowerCase() === generatedCredentials.username.toLowerCase() || (u.email || '').toLowerCase() === generatedCredentials.email.toLowerCase())) {
+    return res.status(409).json({ error: 'A user with this generated identity already exists.' });
   }
 
   const currentCounts = getRoleCounts();
@@ -287,30 +425,56 @@ app.post('/api/admin/register-user', authenticate, authorize(['administrator']),
   }
 
   const newUser = {
-    id: users.length ? Math.max(...users.map(u => u.id)) + 1 : 1,
-    username: trimmedUsername,
-    password: trimmedPassword,
+    id: users.length ? Math.max(...users.map((u) => u.id)) + 1 : 1,
+    username: generatedCredentials.username,
+    password: generatedCredentials.password,
     role: userRole,
-    name: trimmedName
+    name: trimmedName,
+    email: generatedCredentials.email
   };
 
   users.push(newUser);
   auditLogs.push({
     timestamp: new Date().toISOString(),
     user: req.user.username,
-    action: `Registered ${userRole}: ${newUser.name} (${newUser.username})`
+    action: `Registered ${userRole}: ${newUser.name} (${newUser.email})`
   });
   syncToDatabase();
 
   res.status(201).json({
     message: 'User registered successfully',
-    user: { id: newUser.id, username: newUser.username, role: newUser.role, name: newUser.name }
+    user: { id: newUser.id, username: newUser.username, role: newUser.role, name: newUser.name, email: newUser.email, password: newUser.password }
   });
 });
 
 // 2. Fetch Materials (All Roles - Enforced for Students)
 app.get('/api/materials', authenticate, enforceSchoolHours, (req, res) => {
   res.json(materials);
+});
+
+app.get('/api/discussions', authenticate, (req, res) => {
+  res.json(discussionPosts);
+});
+
+app.post('/api/discussions', authenticate, authorize(['teacher']), (req, res) => {
+  const question = String(req.body.question || '').trim();
+  if (!question) {
+    return res.status(400).json({ error: 'Discussion question is required.' });
+  }
+
+  const post = {
+    id: discussionPosts.length ? Math.max(...discussionPosts.map((item) => item.id)) + 1 : 1,
+    userName: req.user.name,
+    userRole: req.user.role,
+    userEmail: req.user.email || req.user.username,
+    question,
+    createdAt: new Date().toISOString()
+  };
+
+  discussionPosts.unshift(post);
+  auditLogs.push({ timestamp: new Date().toISOString(), user: req.user.username, action: `Posted discussion: ${question.substring(0, 80)}` });
+  syncToDatabase();
+  res.status(201).json(post);
 });
 
 // 3. Teacher Video/Resource Upload (Up to 400MB)
