@@ -4,9 +4,10 @@ const path = require("path")
 const fs = require("fs")
 const jwt = require("jsonwebtoken")
 const { DatabaseSync } = require("node:sqlite")
+const { env } = require("node:process")
 
 const app = express()
-const PORT = process.env.PORT || 3000
+const PORT = env.API_PORT || env.PORT || 3000
 const JWT_SECRET = "st_joseph_high_school_secure_key_2026"
 const DATA_DIR = path.join(__dirname, "data")
 const DB_PATH = path.join(DATA_DIR, "school_platform.db")
@@ -60,7 +61,7 @@ db.exec(`
 app.use(express.json())
 app.use(express.static(path.join(__dirname, "dist")))
 
-app.get("/", (req, res) => {
+app.get("/", (_req, res) => {
   const builtIndexFile = path.join(__dirname, "dist", "index.html")
 
   if (fs.existsSync(builtIndexFile)) {
@@ -83,10 +84,10 @@ app.use("/uploads", express.static(uploadDir))
 
 // Configure Storage for up to 400MB Uploads
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (_req, _file, cb) => {
     cb(null, uploadDir)
   },
-  filename: (req, file, cb) => {
+  filename: (_req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9)
     cb(
       null,
@@ -489,7 +490,7 @@ const authenticate = (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET)
     req.user = decoded
     next()
-  } catch (err) {
+  } catch (_err) {
     res.status(403).json({ error: "Invalid or expired session token" })
   }
 }
@@ -586,7 +587,7 @@ app.get(
   "/api/admin/users",
   authenticate,
   authorize(["administrator"]),
-  (req, res) => {
+  (_req, res) => {
     res.json(
       users.map(({ id, username, role, name, email }) => ({
         id,
@@ -713,11 +714,11 @@ app.post(
 )
 
 // 2. Fetch Materials (All Roles - Enforced for Students)
-app.get("/api/materials", authenticate, enforceSchoolHours, (req, res) => {
+app.get("/api/materials", authenticate, enforceSchoolHours, (_req, res) => {
   res.json(materials)
 })
 
-app.get("/api/discussions", authenticate, (req, res) => {
+app.get("/api/discussions", authenticate, (_req, res) => {
   res.json(discussionPosts)
 })
 
@@ -791,7 +792,7 @@ app.get(
   "/api/admin/session",
   authenticate,
   authorize(["administrator"]),
-  (req, res) => {
+  (_req, res) => {
     res.json({ learningSessions })
   },
 )
@@ -846,7 +847,7 @@ app.get(
   "/api/admin/logs",
   authenticate,
   authorize(["administrator"]),
-  (req, res) => {
+  (_req, res) => {
     res.json(auditLogs)
   },
 )

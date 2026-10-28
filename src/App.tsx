@@ -369,7 +369,7 @@ function App() {
     void loadAuditLogs()
   }
 
-  async function uploadMaterial(event: React.FormEvent) {
+  function uploadMaterial(event: React.FormEvent) {
     event.preventDefault()
 
     if (!token || !resourceFile) return
@@ -457,6 +457,7 @@ function App() {
 
           {!isLoggedIn && (
             <button
+              type="button"
               onClick={() => {
                 setLoginRole("administrator")
 
@@ -719,6 +720,7 @@ function App() {
               className="grid grid-cols-2 gap-1.5 text-sm md:block md:space-y-1.5"
             >
               <button
+                type="button"
                 onClick={() => setActiveTab("overview")}
                 className={`flex w-full items-center gap-3 rounded-lg p-2.5 ${
                   activeTab === "overview"
@@ -730,6 +732,7 @@ function App() {
                 Overview
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab("resources")}
                 className={`flex w-full items-center gap-3 rounded-lg p-2.5 ${
                   activeTab === "resources"
@@ -744,6 +747,7 @@ function App() {
                 currentUser?.role === "administrator") && (
                 <>
                   <button
+                    type="button"
                     onClick={() => setActiveTab("upload")}
                     className={`flex w-full items-center gap-3 rounded-lg p-2.5 ${
                       activeTab === "upload"
@@ -755,6 +759,7 @@ function App() {
                     Upload Content
                   </button>
                   <button
+                    type="button"
                     onClick={() => setActiveTab("forum")}
                     className={`flex w-full items-center gap-3 rounded-lg p-2.5 ${
                       activeTab === "forum"
@@ -766,6 +771,7 @@ function App() {
                     Discussion Forum
                   </button>
                   <button
+                    type="button"
                     onClick={() => setActiveTab("participants")}
                     className={`flex w-full items-center gap-3 rounded-lg p-2.5 ${
                       activeTab === "participants"
@@ -781,6 +787,7 @@ function App() {
               {hasAdminAccess && (
                 <>
                   <button
+                    type="button"
                     onClick={() => setActiveTab("governance")}
                     className={`flex w-full items-center gap-3 rounded-lg p-2.5 ${
                       activeTab === "governance"
@@ -792,6 +799,7 @@ function App() {
                     Policy Governance
                   </button>
                   <button
+                    type="button"
                     onClick={() => setActiveTab("audit")}
                     className={`flex w-full items-center gap-3 rounded-lg p-2.5 ${
                       activeTab === "audit"
@@ -803,6 +811,7 @@ function App() {
                     Audit Logs
                   </button>
                   <button
+                    type="button"
                     onClick={() => setActiveTab("register")}
                     className={`flex w-full items-center gap-3 rounded-lg p-2.5 ${
                       activeTab === "register"
@@ -818,6 +827,7 @@ function App() {
             </nav>
 
             <button
+              type="button"
               onClick={logout}
               className="mt-6 w-full rounded-lg border border-red-400/20 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-100 transition hover:bg-red-600"
             >
@@ -946,6 +956,7 @@ function App() {
                       or explore the school cohort.
                     </p>
                     <button
+                      type="button"
                       onClick={() => setActiveTab("resources")}
                       className="mt-5 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-[#003399] transition hover:bg-cyan-50"
                     >
@@ -1113,6 +1124,7 @@ function App() {
                   />
                   <div className="mt-3 flex justify-end">
                     <button
+                      type="button"
                       onClick={() => void submitDiscussion()}
                       className="rounded-lg bg-[#003399] px-4 py-2 text-sm font-semibold text-white hover:bg-[#001A4D]"
                     >
@@ -1185,6 +1197,7 @@ function App() {
                     </p>
                   </div>
                   <button
+                    type="button"
                     onClick={() => void saveGovernance()}
                     className="rounded-lg bg-[#003399] px-3 py-2 text-xs font-semibold text-white hover:bg-[#001A4D]"
                   >
@@ -1226,6 +1239,7 @@ function App() {
                     System access status
                   </span>
                   <button
+                    type="button"
                     onClick={() =>
                       setSchoolHours({
                         ...schoolHours,

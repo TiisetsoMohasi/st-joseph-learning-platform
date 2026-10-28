@@ -14,20 +14,16 @@ These role limits are enforced when administrators register users. Existing cust
 
 ## Development
 
-Install dependencies and start the frontend and API in separate terminals:
+Install dependencies and start the frontend and API together:
 
 ```sh
 npm install
 npm run dev
 ```
 
-```sh
-npm run server
-```
+Open `http://localhost:8443` in your browser. The development command starts Vite on port `8443` and Express on port `3000`; Vite proxies `/api` requests to Express. Set `API_PORT` to use a different API port for both services.
 
-The Vite frontend runs on `http://localhost:8443` and proxies `/api` requests to the Express API on port `3000`.
-
-For a production build served directly by Express, run `npm start`; this builds the React app and serves it on port `3000`.
+For a production build served directly by Express, run `npm start`; it builds the React app and serves it on port `3000`.
 
 ## Sample sign-in accounts
 

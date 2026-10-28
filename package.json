@@ -5,11 +5,11 @@
   "description": "Secure Mobile Learning Platform under Controlled Smartphone Usage Policies for St Joseph High School",
   "main": "server.js",
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --port 8443",
+    "dev": "node scripts/dev.js",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
-    "start": "npm run build && node server.js",
-    "server": "node server.js",
+    "start": "npm run server",
+    "server": "npm run build && node server.js",
     "format": "oxfmt"
   },
   "dependencies": {
